@@ -86,4 +86,53 @@ describe("project repository recovery", () => {
     expect(loaded.document.projects[0]?.id).toBe(EXAMPLE_PROJECT.id);
     expect(loaded.recovered).toBe(true);
   });
+
+  it("treats legacy projects without archivedAt as live", async () => {
+    const storage = new MemoryStorage();
+    storage.value = {
+      version: 1,
+      activeProjectId: EXAMPLE_PROJECT.id,
+      projects: [structuredClone(EXAMPLE_PROJECT)],
+    };
+    const loaded = await new ProjectRepository(storage).load();
+    expect(loaded.document.projects[0]?.archivedAt).toBeUndefined();
+    expect(loaded.document.activeProjectId).toBe(EXAMPLE_PROJECT.id);
+  });
+
+  it("persists archived state and never loads an archived project as active", async () => {
+    const storage = new MemoryStorage();
+    const archivedProject = {
+      ...structuredClone(EXAMPLE_PROJECT),
+      id: "project-archived",
+      archivedAt: 123,
+    };
+    storage.value = {
+      version: 1,
+      activeProjectId: "project-archived",
+      projects: [structuredClone(EXAMPLE_PROJECT), archivedProject],
+    };
+    const loaded = await new ProjectRepository(storage).load();
+    expect(loaded.document.activeProjectId).toBe(EXAMPLE_PROJECT.id);
+    expect(
+      loaded.document.projects.find((p) => p.id === "project-archived")
+        ?.archivedAt,
+    ).toBe(123);
+  });
+
+  it("creates a live fallback project when every stored project is archived", async () => {
+    const storage = new MemoryStorage();
+    storage.value = {
+      version: 1,
+      activeProjectId: EXAMPLE_PROJECT.id,
+      projects: [{ ...structuredClone(EXAMPLE_PROJECT), archivedAt: 42 }],
+    };
+    const loaded = await new ProjectRepository(storage).load();
+    const active = loaded.document.projects.find(
+      (p) => p.id === loaded.document.activeProjectId,
+    );
+    expect(active).toBeDefined();
+    expect(active?.archivedAt).toBeUndefined();
+    expect(loaded.document.projects).toHaveLength(2);
+    expect(loaded.recovered).toBe(true);
+  });
 });

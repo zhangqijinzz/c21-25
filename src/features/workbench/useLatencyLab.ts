@@ -6,10 +6,15 @@ import type {
   WorkspaceDocument,
 } from "../../shared/domain/types";
 import {
+  archiveProject,
   createProject,
   duplicateProject,
+  isProjectLive,
+  removeProject,
   renameProject,
   selectProject,
+  unarchiveProject,
+  updateProject,
 } from "../projects/projectViewModel";
 import {
   addRequestNode,
@@ -26,7 +31,6 @@ import {
   saveScenario,
   type ScenarioComparison,
 } from "../scenarios/scenarioViewModel";
-import { removeProject, updateProject } from "../projects/projectViewModel";
 import { simulateProject } from "../../shared/domain/simulation";
 
 export type LabStatus =
@@ -53,8 +57,9 @@ export function useLatencyLab() {
   const revision = useRef(0);
   const activeProject =
     document?.projects.find(
-      (project) => project.id === document.activeProjectId,
-    ) ?? document?.projects[0];
+      (project) =>
+        project.id === document.activeProjectId && isProjectLive(project),
+    ) ?? document?.projects.find(isProjectLive);
   const result = useMemo(
     () => (activeProject ? simulateProject(activeProject, mode) : undefined),
     [activeProject, mode],
@@ -64,6 +69,10 @@ export function useLatencyLab() {
     [activeProject],
   );
   const scenarioList = activeProject?.scenarios ?? [];
+  const liveProjects = useMemo(
+    () => document?.projects.filter(isProjectLive) ?? [],
+    [document],
+  );
   const baselineScenario =
     scenarioList.find((scenario) => scenario.id === comparisonIds.baselineId) ??
     scenarioList[1] ??
@@ -170,12 +179,59 @@ export function useLatencyLab() {
       commit(duplicateProject(current, activeProject), "editing");
   }, [activeProject, commit]);
 
+  const archiveProjectById = useCallback(
+    (id: string) => {
+      const current = documentRef.current;
+      if (!current) return;
+      const target = current.projects.find((project) => project.id === id);
+      if (!target || !isProjectLive(target)) return;
+      const next = archiveProject(current, id);
+      commit(next, "editing");
+      if (current.activeProjectId === id) {
+        // 归档当前项目后对比选择已失效，重置避免引用归档项目的方案
+        setComparisonIds({ baselineId: "", comparisonId: "" });
+        const landed = next.projects.find(
+          (project) => project.id === next.activeProjectId,
+        );
+        setNotice(
+          landed
+            ? `已归档「${target.title}」，当前项目切换到「${landed.title}」。`
+            : `已归档「${target.title}」。`,
+        );
+      } else {
+        setNotice(`已归档「${target.title}」，数据与方案快照仍保留在本地。`);
+      }
+    },
+    [commit],
+  );
+
+  const unarchiveProjectById = useCallback(
+    (id: string) => {
+      const current = documentRef.current;
+      if (!current) return;
+      const target = current.projects.find((project) => project.id === id);
+      if (!target || isProjectLive(target)) return;
+      commit(unarchiveProject(current, id), "editing");
+      setNotice(`已恢复「${target.title}」，并设为当前项目。`);
+    },
+    [commit],
+  );
+
   const deleteProject = useCallback(
     (id: string) => {
       const current = documentRef.current;
-      if (current && current.projects.length > 1)
-        commit(removeProject(current, id), "editing");
-      else setNotice("至少保留一个链路项目。");
+      if (!current) return;
+      const target = current.projects.find((project) => project.id === id);
+      if (!target) return;
+      const liveCount = current.projects.filter(isProjectLive).length;
+      // 归档项目随时可删；未归档项目至少保留一个，防止没有可用项目
+      if (isProjectLive(target) && liveCount <= 1) {
+        setNotice("至少保留一个未归档项目，可先归档再删除。");
+        return;
+      }
+      commit(removeProject(current, id), "editing");
+      if (current.activeProjectId === id)
+        setComparisonIds({ baselineId: "", comparisonId: "" });
     },
     [commit],
   );
@@ -269,6 +325,7 @@ export function useLatencyLab() {
   return {
     document,
     activeProject,
+    liveProjects,
     result,
     graphAnalysis,
     simulationValid,
@@ -284,6 +341,8 @@ export function useLatencyLab() {
     newProject,
     renameActive,
     duplicateActive,
+    archiveProjectById,
+    unarchiveProjectById,
     deleteProject,
     addNode,
     patchNode,

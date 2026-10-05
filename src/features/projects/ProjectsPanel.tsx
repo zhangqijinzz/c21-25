@@ -1,24 +1,37 @@
-import { Copy, FolderPlus, PencilLine, Play, Workflow } from "lucide-react";
+import {
+  Archive,
+  Copy,
+  FolderPlus,
+  PencilLine,
+  Play,
+  Workflow,
+} from "lucide-react";
 import type { LatencyProject } from "../../shared/domain/types";
 
 interface Props {
   projects: LatencyProject[];
+  archivedCount: number;
   activeId: string;
   onChoose: (id: string) => void;
   onCreate: () => void;
   onRename: (name: string) => void;
   onDuplicate: () => void;
+  onArchive: (id: string) => void;
   onOpenEditor: () => void;
+  onOpenArchive: () => void;
 }
 
 export default function ProjectsPanel({
   projects,
+  archivedCount,
   activeId,
   onChoose,
   onCreate,
   onRename,
   onDuplicate,
+  onArchive,
   onOpenEditor,
+  onOpenArchive,
 }: Props) {
   const active = projects.find((project) => project.id === activeId);
   return (
@@ -57,6 +70,16 @@ export default function ProjectsPanel({
               <span className="project-row-arrow">↗</span>
             </button>
           ))}
+          {archivedCount > 0 && (
+            <button className="archived-link" onClick={onOpenArchive}>
+              <Archive size={14} />
+              <span>
+                {archivedCount} 个已归档项目
+                <small>数据保留在本地项目区，可随时恢复</small>
+              </span>
+              <span className="project-row-arrow">↗</span>
+            </button>
+          )}
         </div>
         {active && (
           <div className="project-cover">
@@ -104,6 +127,14 @@ export default function ProjectsPanel({
                   onClick={onDuplicate}
                 >
                   <Copy size={15} />
+                </button>
+                <button
+                  className="icon-button light"
+                  title="归档项目"
+                  aria-label="归档项目"
+                  onClick={() => onArchive(active.id)}
+                >
+                  <Archive size={15} />
                 </button>
                 <button className="button button-lime" onClick={onOpenEditor}>
                   打开工作台 <Play size={14} fill="currentColor" />

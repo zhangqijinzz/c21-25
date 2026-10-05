@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  Archive,
   ChevronDown,
   Plus,
   RadioTower,
@@ -20,6 +21,7 @@ export interface NavigationItem {
 interface Props {
   activeProject: LatencyProject;
   projects: LatencyProject[];
+  archivedCount: number;
   activeModule: LabModule;
   navigation: NavigationItem[];
   onModule: (module: LabModule) => void;
@@ -30,6 +32,7 @@ interface Props {
 export default function Sidebar({
   activeProject,
   projects,
+  archivedCount,
   activeModule,
   navigation,
   onModule,
@@ -79,6 +82,19 @@ export default function Sidebar({
                 <small>{project.nodes.length} nodes</small>
               </button>
             ))}
+            {archivedCount > 0 && (
+              <button
+                className="dropdown-archived"
+                onClick={() => {
+                  onModule("archive");
+                  setProjectMenuOpen(false);
+                }}
+              >
+                <Archive size={14} />
+                <span>{archivedCount} 个已归档项目</span>
+                <small>在本地项目区查看</small>
+              </button>
+            )}
             <button
               className="dropdown-new"
               onClick={() => {

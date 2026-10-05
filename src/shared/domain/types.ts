@@ -28,6 +28,8 @@ export interface LatencyProject {
   scenarios: ScenarioSnapshot[];
   createdAt: number;
   updatedAt: number;
+  /** 归档时间戳；缺省（旧数据）视为未归档。归档后数据与方案快照全部保留。 */
+  archivedAt?: number;
 }
 
 export interface WorkspaceDocument {

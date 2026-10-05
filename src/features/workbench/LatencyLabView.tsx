@@ -63,11 +63,13 @@ export default function LatencyLabView() {
     );
 
   const active = vm.activeProject;
+  const archivedCount = vm.document.projects.length - vm.liveProjects.length;
   return (
     <div className="app-shell">
       <Sidebar
         activeProject={active}
-        projects={vm.document.projects}
+        projects={vm.liveProjects}
+        archivedCount={archivedCount}
         activeModule={vm.module}
         navigation={navigation}
         onModule={vm.setModule}
@@ -126,7 +128,8 @@ export default function LatencyLabView() {
         <div className="content-scroll">
           {vm.module === "projects" && (
             <ProjectsPanel
-              projects={vm.document.projects}
+              projects={vm.liveProjects}
+              archivedCount={archivedCount}
               activeId={active.id}
               onChoose={vm.chooseProject}
               onCreate={() => {
@@ -135,7 +138,9 @@ export default function LatencyLabView() {
               }}
               onRename={vm.renameActive}
               onDuplicate={vm.duplicateActive}
+              onArchive={vm.archiveProjectById}
               onOpenEditor={() => vm.setModule("graph")}
+              onOpenArchive={() => vm.setModule("archive")}
             />
           )}
           {vm.module === "graph" && vm.graphAnalysis && (
@@ -185,6 +190,8 @@ export default function LatencyLabView() {
               notice={vm.notice}
               onChoose={vm.chooseProject}
               onDuplicate={vm.duplicateActive}
+              onArchive={vm.archiveProjectById}
+              onUnarchive={vm.unarchiveProjectById}
               onDelete={vm.deleteProject}
               onRetrySave={vm.retrySave}
             />

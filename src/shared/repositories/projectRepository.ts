@@ -1,4 +1,5 @@
 import {
+  createEmptyProject,
   EXAMPLE_PROJECT,
   type LatencyProject,
   type RequestNode,
@@ -159,6 +160,11 @@ function parseProject(
       typeof value.updatedAt === "number" && Number.isFinite(value.updatedAt)
         ? value.updatedAt
         : now,
+    // 旧数据没有 archivedAt 字段，按未归档处理
+    ...(typeof value.archivedAt === "number" &&
+    Number.isFinite(value.archivedAt)
+      ? { archivedAt: value.archivedAt }
+      : {}),
   };
   return { project, recovered };
 }
@@ -177,14 +183,26 @@ function parseWorkspace(
   if (!projects.length) return undefined;
   const firstProject = projects[0];
   if (!firstProject) return undefined;
-  const activeProjectId = projects.some(
+  // 活跃项目必须未被归档：优先保留存储的选择，否则落到第一个未归档项目
+  const storedActive = projects.find(
     (project) => project.id === value.activeProjectId,
-  )
-    ? String(value.activeProjectId)
-    : firstProject.id;
-  const recovered =
+  );
+  let activeProjectId =
+    storedActive && storedActive.archivedAt === undefined
+      ? storedActive.id
+      : (projects.find((project) => project.archivedAt === undefined)?.id ??
+        "");
+  let recovered =
     projects.length !== parsed.length ||
-    parsed.some((entry) => entry?.recovered);
+    parsed.some((entry) => entry?.recovered) ||
+    activeProjectId !== value.activeProjectId;
+  if (!activeProjectId) {
+    // 所有项目都被归档：兜底补一个空白项目，保证总有可选中的项目
+    const fallback = createEmptyProject();
+    projects.unshift(fallback);
+    activeProjectId = fallback.id;
+    recovered = true;
+  }
   return { document: { version: 1, activeProjectId, projects }, recovered };
 }
 
