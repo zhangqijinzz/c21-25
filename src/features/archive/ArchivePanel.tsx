@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { Archive, Copy, Database, HardDrive, Trash2 } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  Copy,
+  Database,
+  HardDrive,
+  Trash2,
+} from "lucide-react";
 import type { LatencyProject } from "../../shared/domain/types";
 
 interface Props {
@@ -8,7 +15,9 @@ interface Props {
   storageState: "saving" | "saved" | "error";
   notice: string;
   onChoose: (id: string) => void;
-  onDuplicate: () => void;
+  onDuplicate: (id: string) => void;
+  onArchive: (id: string) => void;
+  onRestore: (id: string) => void;
   onDelete: (id: string) => void;
   onRetrySave: () => void;
 }
@@ -20,12 +29,15 @@ export default function ArchivePanel({
   notice,
   onChoose,
   onDuplicate,
+  onArchive,
+  onRestore,
   onDelete,
   onRetrySave,
 }: Props) {
   const [pendingDelete, setPendingDelete] = useState<LatencyProject | null>(
     null,
   );
+  const archivedCount = projects.filter((project) => project.archived).length;
   return (
     <section className="module-page archive-page">
       <div className="module-heading">
@@ -69,6 +81,9 @@ export default function ArchivePanel({
             项目数
           </span>
           <strong>{String(projects.length).padStart(2, "0")}</strong>
+          <small className="storage-sub">
+            已归档 {String(archivedCount).padStart(2, "0")}
+          </small>
         </div>
       </div>
       {notice && (
@@ -87,7 +102,7 @@ export default function ArchivePanel({
         </div>
         {projects.map((project) => (
           <div
-            className={`archive-table-row ${project.id === activeId ? "is-active" : ""}`}
+            className={`archive-table-row ${project.id === activeId ? "is-active" : ""} ${project.archived ? "is-archived" : ""}`}
             key={project.id}
           >
             <button
@@ -97,6 +112,7 @@ export default function ArchivePanel({
               <i />
               {project.title}
               {project.id === activeId && <em>当前</em>}
+              {project.archived && <em className="archived-tag">已归档</em>}
             </button>
             <span>{String(project.nodes.length).padStart(2, "0")}</span>
             <span>{String(project.scenarios.length).padStart(2, "0")}</span>
@@ -110,9 +126,33 @@ export default function ArchivePanel({
             <span className="archive-actions">
               <button
                 className="icon-button"
-                title="复制当前项目"
-                aria-label="复制当前项目"
-                onClick={onDuplicate}
+                title={project.archived ? "恢复项目" : "归档项目"}
+                aria-label={
+                  project.archived
+                    ? `恢复项目 ${project.title}`
+                    : `归档项目 ${project.title}`
+                }
+                onClick={() =>
+                  project.archived
+                    ? onRestore(project.id)
+                    : onArchive(project.id)
+                }
+              >
+                {project.archived ? (
+                  <ArchiveRestore size={14} />
+                ) : (
+                  <Archive size={14} />
+                )}
+              </button>
+              <button
+                className="icon-button"
+                title={
+                  project.archived
+                    ? "复制为新的进行中项目（副本不归档）"
+                    : "复制项目"
+                }
+                aria-label={`复制项目 ${project.title}`}
+                onClick={() => onDuplicate(project.id)}
               >
                 <Copy size={14} />
               </button>
@@ -148,7 +188,11 @@ export default function ArchivePanel({
               <Trash2 size={18} />
             </span>
             <h2 id="delete-project-title">删除这个链路项目？</h2>
-            <p>“{pendingDelete.title}”及其方案快照将从此设备移除。</p>
+            <p>
+              {pendingDelete.archived
+                ? `“${pendingDelete.title}”当前已归档，删除后其保留的方案快照将一并移除，不可恢复。`
+                : `“${pendingDelete.title}”及其方案快照将从此设备移除。`}
+            </p>
             <div>
               <button
                 className="button button-neutral"

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  Archive,
   ArrowDownRight,
   ArrowUpRight,
   GitCompareArrows,
@@ -43,6 +44,7 @@ export default function ScenarioPanel({
   onSelectComparison,
 }: Props) {
   const [name, setName] = useState("");
+  const archived = project.archived;
   const delta = comparisonResult?.deltaMs ?? 0;
   const outcome = comparisonResult?.outcome ?? "equal";
   const changes = comparisonResult?.changes ?? [];
@@ -55,6 +57,12 @@ export default function ScenarioPanel({
           <p>保存关键参数快照，判断一次调整是否真的缩短了等待。</p>
         </div>
       </div>
+      {archived && (
+        <div className="archive-notice scenario-archived">
+          <Archive size={15} />
+          该项目已归档：方案快照保留且可继续对比查看，保存、恢复与删除快照已锁定，恢复项目后再编辑。
+        </div>
+      )}
       <div className="save-scenario-bar">
         <div className="save-icon">
           <GitCompareArrows size={18} />
@@ -67,10 +75,12 @@ export default function ScenarioPanel({
           className="scenario-name-input"
           placeholder={`例如：${project.title} · 并发优化`}
           value={name}
+          disabled={archived}
           onChange={(event) => setName(event.target.value)}
         />
         <button
           className="button button-primary"
+          disabled={archived}
           onClick={() => {
             if (onSave(name)) setName("");
           }}
@@ -185,6 +195,7 @@ export default function ScenarioPanel({
                   className="icon-button"
                   title="恢复此方案"
                   aria-label={`恢复方案 ${scenario.name}`}
+                  disabled={archived}
                   onClick={() => onRestore(scenario.id)}
                 >
                   <RotateCcw size={14} />
@@ -193,6 +204,7 @@ export default function ScenarioPanel({
                   className="icon-button danger-button"
                   title="删除方案"
                   aria-label={`删除方案 ${scenario.name}`}
+                  disabled={archived}
                   onClick={() => onRemove(scenario.id)}
                 >
                   <Trash2 size={14} />

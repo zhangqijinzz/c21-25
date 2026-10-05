@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { LatencyProject } from "../../shared/domain/types";
+import { visibleProjects } from "../projects/projectViewModel";
 import type { LabModule } from "./useLatencyLab";
 
 export interface NavigationItem {
@@ -37,6 +38,8 @@ export default function Sidebar({
   onNewProject,
 }: Props) {
   const [projectMenuOpen, setProjectMenuOpen] = useState(false);
+  // 归档项目默认不进下拉；全部归档时回退展示全部，保证可切换
+  const listedProjects = visibleProjects(projects);
   return (
     <aside className="sidebar">
       <button
@@ -60,13 +63,15 @@ export default function Sidebar({
           <i className="workspace-light" />
           <span>
             <b>{activeProject.title}</b>
-            <small>本地工作区</small>
+            <small>
+              {activeProject.archived ? "已归档 · 本地工作区" : "本地工作区"}
+            </small>
           </span>
           <ChevronDown size={15} className={projectMenuOpen ? "turn-up" : ""} />
         </button>
         {projectMenuOpen && (
           <div className="project-dropdown">
-            {projects.map((project) => (
+            {listedProjects.map((project) => (
               <button
                 key={project.id}
                 onClick={() => {
@@ -76,7 +81,13 @@ export default function Sidebar({
                 className={project.id === activeProject.id ? "current" : ""}
               >
                 <span>{project.title}</span>
-                <small>{project.nodes.length} nodes</small>
+                <small>
+                  {project.archived ? (
+                    <em className="archived-tag">已归档</em>
+                  ) : (
+                    `${project.nodes.length} nodes`
+                  )}
+                </small>
               </button>
             ))}
             <button

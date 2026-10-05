@@ -86,4 +86,32 @@ describe("project repository recovery", () => {
     expect(loaded.document.projects[0]?.id).toBe(EXAMPLE_PROJECT.id);
     expect(loaded.recovered).toBe(true);
   });
+
+  it("treats legacy projects without an archived field as unarchived", async () => {
+    const storage = new MemoryStorage();
+    const legacy: Record<string, unknown> = {
+      ...structuredClone(EXAMPLE_PROJECT),
+    };
+    delete legacy.archived;
+    storage.value = {
+      version: 1,
+      activeProjectId: EXAMPLE_PROJECT.id,
+      projects: [legacy],
+    };
+    const loaded = await new ProjectRepository(storage).load();
+    expect(loaded.document.projects[0]?.archived).toBe(false);
+  });
+
+  it("persists the archived flag through a save/load round trip", async () => {
+    const storage = new MemoryStorage();
+    const repository = new ProjectRepository(storage);
+    const document: WorkspaceDocument = {
+      version: 1,
+      activeProjectId: EXAMPLE_PROJECT.id,
+      projects: [{ ...structuredClone(EXAMPLE_PROJECT), archived: true }],
+    };
+    await repository.save(document);
+    const loaded = await repository.load();
+    expect(loaded.document.projects[0]?.archived).toBe(true);
+  });
 });

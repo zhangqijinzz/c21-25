@@ -1,4 +1,14 @@
-import { Copy, FolderPlus, PencilLine, Play, Workflow } from "lucide-react";
+import { useState } from "react";
+import {
+  Archive,
+  ArchiveRestore,
+  ChevronDown,
+  Copy,
+  FolderPlus,
+  PencilLine,
+  Play,
+  Workflow,
+} from "lucide-react";
 import type { LatencyProject } from "../../shared/domain/types";
 
 interface Props {
@@ -8,6 +18,8 @@ interface Props {
   onCreate: () => void;
   onRename: (name: string) => void;
   onDuplicate: () => void;
+  onArchive: (id: string) => void;
+  onRestore: (id: string) => void;
   onOpenEditor: () => void;
 }
 
@@ -18,9 +30,14 @@ export default function ProjectsPanel({
   onCreate,
   onRename,
   onDuplicate,
+  onArchive,
+  onRestore,
   onOpenEditor,
 }: Props) {
+  const [showArchived, setShowArchived] = useState(false);
   const active = projects.find((project) => project.id === activeId);
+  const openProjects = projects.filter((project) => !project.archived);
+  const archivedProjects = projects.filter((project) => project.archived);
   return (
     <section className="module-page projects-page">
       <div className="module-heading">
@@ -36,27 +53,78 @@ export default function ProjectsPanel({
       <div className="project-workbench">
         <div className="project-list">
           <div className="section-label">
-            我的项目 <span>{String(projects.length).padStart(2, "0")}</span>
+            我的项目 <span>{String(openProjects.length).padStart(2, "0")}</span>
           </div>
-          {projects.map((project, index) => (
-            <button
+          {openProjects.map((project, index) => (
+            <div
               className={`project-row ${project.id === activeId ? "selected" : ""}`}
               key={project.id}
-              onClick={() => onChoose(project.id)}
             >
-              <span className="project-index">
-                {String(index + 1).padStart(2, "0")}
-              </span>
-              <span className="project-row-copy">
-                <strong>{project.title}</strong>
-                <small>
-                  {project.nodes.length} 个请求节点 · {project.scenarios.length}{" "}
-                  个方案
-                </small>
-              </span>
-              <span className="project-row-arrow">↗</span>
-            </button>
+              <button
+                className="project-row-select"
+                onClick={() => onChoose(project.id)}
+              >
+                <span className="project-index">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <span className="project-row-copy">
+                  <strong>{project.title}</strong>
+                  <small>
+                    {project.nodes.length} 个请求节点 ·{" "}
+                    {project.scenarios.length} 个方案
+                  </small>
+                </span>
+                <span className="project-row-arrow">↗</span>
+              </button>
+              <button
+                className="icon-button project-row-action"
+                title="归档项目"
+                aria-label={`归档项目 ${project.title}`}
+                onClick={() => onArchive(project.id)}
+              >
+                <Archive size={13} />
+              </button>
+            </div>
           ))}
+          {archivedProjects.length > 0 && (
+            <div className="archived-section">
+              <button
+                className="archived-toggle"
+                onClick={() => setShowArchived((open) => !open)}
+                aria-expanded={showArchived}
+              >
+                <Archive size={13} />
+                已归档项目
+                <span>{String(archivedProjects.length).padStart(2, "0")}</span>
+                <ChevronDown
+                  size={13}
+                  className={showArchived ? "turn-up" : ""}
+                />
+              </button>
+              {showArchived &&
+                archivedProjects.map((project) => (
+                  <div className="project-row archived-row" key={project.id}>
+                    <span className="project-row-copy">
+                      <strong>
+                        {project.title} <em className="archived-tag">已归档</em>
+                      </strong>
+                      <small>
+                        {project.nodes.length} 个请求节点 ·{" "}
+                        {project.scenarios.length} 个方案 · 数据已保留
+                      </small>
+                    </span>
+                    <button
+                      className="icon-button project-row-action"
+                      title="恢复项目"
+                      aria-label={`恢复项目 ${project.title}`}
+                      onClick={() => onRestore(project.id)}
+                    >
+                      <ArchiveRestore size={13} />
+                    </button>
+                  </div>
+                ))}
+            </div>
+          )}
         </div>
         {active && (
           <div className="project-cover">

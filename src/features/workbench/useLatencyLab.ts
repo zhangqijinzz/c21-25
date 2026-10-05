@@ -6,9 +6,11 @@ import type {
   WorkspaceDocument,
 } from "../../shared/domain/types";
 import {
+  archiveProject,
   createProject,
   duplicateProject,
   renameProject,
+  restoreProject,
   selectProject,
 } from "../projects/projectViewModel";
 import {
@@ -170,6 +172,52 @@ export function useLatencyLab() {
       commit(duplicateProject(current, activeProject), "editing");
   }, [activeProject, commit]);
 
+  const duplicateProjectById = useCallback(
+    (id: string) => {
+      const current = documentRef.current;
+      const source = current?.projects.find((project) => project.id === id);
+      if (current && source)
+        commit(duplicateProject(current, source), "editing");
+    },
+    [commit],
+  );
+
+  const archiveProjectById = useCallback(
+    (id: string) => {
+      const current = documentRef.current;
+      const target = current?.projects.find((project) => project.id === id);
+      if (!current || !target) return;
+      const next = archiveProject(current, id);
+      commit(next, "editing");
+      if (id === current.activeProjectId) {
+        // 归档项目不再参与方案对比的选择
+        setComparisonIds({ baselineId: "", comparisonId: "" });
+        const landing = next.projects.find(
+          (project) => project.id === next.activeProjectId,
+        );
+        setNotice(
+          next.activeProjectId === id
+            ? `已归档「${target.title}」。所有项目均已归档，可在本地项目区随时恢复。`
+            : `已归档「${target.title}」，当前项目切换为「${landing?.title ?? ""}」。`,
+        );
+      } else {
+        setNotice(`已归档「${target.title}」，数据与方案快照均已保留。`);
+      }
+    },
+    [commit],
+  );
+
+  const restoreProjectById = useCallback(
+    (id: string) => {
+      const current = documentRef.current;
+      const target = current?.projects.find((project) => project.id === id);
+      if (!current || !target) return;
+      commit(restoreProject(current, id), "ready");
+      setNotice(`已恢复「${target.title}」，并设为当前项目。`);
+    },
+    [commit],
+  );
+
   const deleteProject = useCallback(
     (id: string) => {
       const current = documentRef.current;
@@ -284,6 +332,9 @@ export function useLatencyLab() {
     newProject,
     renameActive,
     duplicateActive,
+    duplicateProjectById,
+    archiveProjectById,
+    restoreProjectById,
     deleteProject,
     addNode,
     patchNode,

@@ -742,6 +742,83 @@ button:disabled {
 .project-row:hover .project-row-arrow {
   transform: translate(2px, -2px);
 }
+.project-row-select {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+}
+.project-row-action {
+  flex: 0 0 auto;
+  width: 25px;
+  height: 25px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.project-row:hover .project-row-action,
+.archived-row .project-row-action {
+  opacity: 1;
+}
+.archived-section {
+  margin-top: 6px;
+  border-top: 1px solid #edf0eb;
+}
+.archived-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 11px 5px 6px;
+  color: #9aa39b;
+  background: none;
+  border: 0;
+  font-size: 9px;
+  cursor: pointer;
+}
+.archived-toggle:hover {
+  color: #6d7a6e;
+}
+.archived-toggle > span {
+  color: #b6bdb4;
+  font: 9px var(--mono);
+}
+.archived-toggle > svg:last-child {
+  margin-left: auto;
+}
+.archived-row {
+  padding: 10px 5px;
+  cursor: default;
+}
+.archived-row strong {
+  color: #8b968c;
+}
+.archived-tag {
+  padding: 3px 5px;
+  color: #9a7b3f;
+  background: #f6eeda;
+  border-radius: 4px;
+  font-size: 7px;
+  font-style: normal;
+  white-space: nowrap;
+}
+.project-dropdown .archived-tag {
+  font-size: 8px;
+}
+.icon-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.icon-button:disabled:hover {
+  color: #7b877e;
+  background: transparent;
+  border-color: transparent;
+}
 .project-cover {
   position: relative;
   min-height: 333px;
@@ -2060,6 +2137,10 @@ button:disabled {
   color: #405542;
   font: 600 25px var(--mono);
 }
+.storage-sub {
+  color: #a8b0a6;
+  font-size: 8px;
+}
 .archive-notice {
   display: flex;
   align-items: center;
@@ -2106,6 +2187,16 @@ button:disabled {
 }
 .archive-table-row.is-active {
   background: #fcfdf9;
+}
+.archive-table-row.is-archived {
+  color: #a9b2a8;
+  background: #fafaf7;
+}
+.archive-table-row.is-archived .archive-project-name {
+  color: #8b968c;
+}
+.archive-table-row.is-archived .archive-project-name > i {
+  background: #d8d3c2;
 }
 .archive-project-name {
   display: flex;

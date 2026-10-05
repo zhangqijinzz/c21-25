@@ -4,6 +4,19 @@ import {
   type WorkspaceDocument,
 } from "../../shared/domain/types";
 
+export function isProjectArchived(project: LatencyProject): boolean {
+  return project.archived === true;
+}
+
+/**
+ * 常用入口（侧边栏下拉、项目列表）默认只展示未归档项目；
+ * 全部项目都被归档时回退为展示全部，保证始终有项目可选。
+ */
+export function visibleProjects(projects: LatencyProject[]): LatencyProject[] {
+  const open = projects.filter((project) => !isProjectArchived(project));
+  return open.length ? open : projects;
+}
+
 export function createProject(
   document: WorkspaceDocument,
   now = Date.now(),
@@ -23,6 +36,46 @@ export function selectProject(
   return document.projects.some((project) => project.id === projectId)
     ? { ...document, activeProjectId: projectId }
     : document;
+}
+
+export function archiveProject(
+  document: WorkspaceDocument,
+  projectId: string,
+  now = Date.now(),
+): WorkspaceDocument {
+  if (!document.projects.some((project) => project.id === projectId))
+    return document;
+  const projects = document.projects.map((project) =>
+    project.id === projectId
+      ? { ...project, archived: true, updatedAt: now }
+      : project,
+  );
+  let activeProjectId = document.activeProjectId;
+  if (activeProjectId === projectId) {
+    // 归档当前项目时明确落到下一个未归档项目；
+    // 全部归档的兜底情况下保留原选中项，避免出现选不中任何项目的状态
+    const landing = projects.find((project) => !project.archived);
+    activeProjectId = landing ? landing.id : projectId;
+  }
+  return { ...document, projects, activeProjectId };
+}
+
+export function restoreProject(
+  document: WorkspaceDocument,
+  projectId: string,
+  now = Date.now(),
+): WorkspaceDocument {
+  if (!document.projects.some((project) => project.id === projectId))
+    return document;
+  return {
+    ...document,
+    activeProjectId: projectId,
+    projects: document.projects.map((project) =>
+      project.id === projectId
+        ? { ...project, archived: false, updatedAt: now }
+        : project,
+    ),
+  };
 }
 
 export function renameProject(
@@ -48,6 +101,8 @@ export function duplicateProject(
     ...structuredClone(project),
     id: `project-${crypto.randomUUID()}`,
     title: `${project.title} · 副本`,
+    // 副本视为新的进行中项目：即使复制的是归档项目，副本也不带归档状态
+    archived: false,
     createdAt: now,
     updatedAt: now,
     scenarios: [],
@@ -85,7 +140,10 @@ export function removeProject(
     projects,
     activeProjectId:
       document.activeProjectId === projectId
-        ? (projects[0]?.id ?? "")
+        ? // 优先落到未归档项目，全部归档时退化为列表首项
+          (projects.find((project) => !project.archived)?.id ??
+          projects[0]?.id ??
+          "")
         : document.activeProjectId,
   };
 }

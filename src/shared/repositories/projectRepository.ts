@@ -151,6 +151,8 @@ function parseProject(
         ? Math.floor(value.concurrencyLimit)
         : null,
     scenarios,
+    // 旧数据没有 archived 字段，一律按未归档处理
+    archived: value.archived === true,
     createdAt:
       typeof value.createdAt === "number" && Number.isFinite(value.createdAt)
         ? value.createdAt

@@ -26,6 +26,7 @@ export interface LatencyProject {
   nodes: RequestNode[];
   concurrencyLimit: number | null;
   scenarios: ScenarioSnapshot[];
+  archived: boolean;
   createdAt: number;
   updatedAt: number;
 }
@@ -64,6 +65,7 @@ export const EXAMPLE_PROJECT: LatencyProject = {
   id: "project-latency-demo",
   title: "商品详情页 · 首屏预算",
   concurrencyLimit: null,
+  archived: false,
   createdAt: 1_728_000_000_000,
   updatedAt: 1_728_000_000_000,
   scenarios: [],
@@ -128,6 +130,7 @@ export function createEmptyProject(now = Date.now()): LatencyProject {
     title: "未命名链路",
     nodes: [],
     concurrencyLimit: null,
+    archived: false,
     scenarios: [],
     createdAt: now,
     updatedAt: now,
